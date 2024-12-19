@@ -914,7 +914,7 @@ void screen_timer_cb(lv_timer_t *t) {
 void screen_running_timer_cb(lv_timer_t *t) {
     if (is_fly_flag) {
         lv_label_set_text_fmt(guider_ui.screen_running_label_1, "F-TOF:%.1fM", (float)tof_front / 1000.0f);
-        lv_label_set_text_fmt(guider_ui.screen_running_label_2, "ALT:%.1fM", altitude);
+        lv_label_set_text_fmt(guider_ui.screen_running_label_2, "ALT:%.2f", altitude);
         lv_label_set_text_fmt(guider_ui.screen_running_label_6, "%.1fV", fly_bat_voltage);
         lv_label_set_text_fmt(guider_ui.screen_running_label_7, "%.1fV", Battery_voltage[0]);
         lv_label_set_text_fmt(guider_ui.screen_running_label_8, "%.1fV", Battery_voltage[1]);
