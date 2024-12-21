@@ -651,7 +651,7 @@ void voltage_print(void) {
 
 void task_tone(void *pvParameters) {
     for (;;) {
-        start_tone();
+        // start_tone();
         vTaskDelete(task_tone_handle);
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
