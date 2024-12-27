@@ -872,8 +872,8 @@ void screen_timer_cb(lv_timer_t *t) {
             AltMode = ALT_CONTROL_MODE;
     }
 
-    lv_label_set_text_fmt(guider_ui.screen_label_1, "BAT1:%.1fV", Battery_voltage[0]);
-    lv_label_set_text_fmt(guider_ui.screen_label_2, "BAT2:%.1fV", Battery_voltage[1]);
+    lv_label_set_text_fmt(guider_ui.screen_label_1, "BAT1:%.3fV", Battery_voltage[0]);
+    lv_label_set_text_fmt(guider_ui.screen_label_2, "BAT2:%.3fV", Battery_voltage[1]);
 
     // #ifdef NEW_ATOM_JOY
     // if (StickMode == 2) {
