@@ -576,10 +576,10 @@ void loop() {
     senddata[17] = d_int[2];
     senddata[18] = d_int[3];
 
-    senddata[19] = auto_up_down_status;
+    senddata[19] = getArmButton();
     senddata[20] = getFlipButton();
-    senddata[21] = Mode;
-    senddata[22] = AltMode;
+    senddata[21] = getOptionButton();
+    senddata[22] = getModeButton();
 
     senddata[23] = proactive_flag;
 
