@@ -29,7 +29,7 @@
 #include "main.h"
 #include <FS.h>
 #include <SPIFFS.h>
-#include "lvgl_porting.h"
+// #include "lvgl_porting.h"
 
 #include "./images/pair_confirm.h"
 #include "./images/press_fly.h"
@@ -41,7 +41,7 @@
 #include "./images/move_start_4.h"
 #include "./images/move_start_5.h"
 
-#include "app_lvgl.h"
+// #include "app_lvgl.h"
 
 M5GFX display;
 
@@ -62,8 +62,10 @@ volatile uint8_t Loop_flag = 0;
 float Timer                = 0.0;
 float dTime                = 0.01;
 uint8_t Timer_state        = 0;
-uint8_t StickMode          = 2;
 uint32_t espnow_version;
+
+uint8_t receive_func_cnt = 0;
+uint8_t loop_func_cnt = 0;
 
 unsigned long stime, etime, dtime;
 byte axp_cnt = 0;
@@ -139,9 +141,13 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *recv_data, int data_len)
             if (fly_mode == PARKING_MODE) {
                 fly_status_manual = 0;
             }
-            // USBSerial.printf("roll:%.2f, pitch:%.2f, yaw:%.2f, voltage:%.2f, alt_flag:%d, fly_mode:%d,
-            // tof_front:%d\r\n", roll_angle, pitch_angle, yaw_angle, fly_bat_voltage, alt_flag, fly_mode, tof_front);
         }
+    }
+
+    receive_func_cnt++;
+    if (receive_func_cnt > 10) {
+        receive_func_cnt = 0;
+        USBSerial.printf("Received\n");
     }
 }
 
@@ -305,7 +311,6 @@ void change_channel(uint8_t ch) {
 hw_timer_t *timer = NULL;
 void IRAM_ATTR onTimer() {
     Loop_flag = 1;
-    // Timer = Timer + dTime;
 }
 
 void setup() {
@@ -380,39 +385,14 @@ void setup() {
 
     joy_update();
 
-    StickMode = 2;
-    // if(getOptionButton())
-    // {
-    //   StickMode = 3;
-    //   display.startWrite();
-    //   display.drawCenterString("Please release button.", display.width()/2, display.height()/2);
-    //   display.endWrite();
-    //   while(getOptionButton())joy_update();
-    // }
-    AltMode = ALT_CONTROL_MODE;
     delay(500);
 
-    lvgl_init();
-
-    if (StickMode == 3) {
-        THROTTLE      = RIGHTY;
-        AILERON       = LEFTX;
-        ELEVATOR      = LEFTY;
-        RUDDER        = RIGHTX;
-        ARM_BUTTON    = RIGHT_STICK_BUTTON;
-        FLIP_BUTTON   = LEFT_STICK_BUTTON;
-        MODE_BUTTON   = RIGHT_BUTTON;
-        OPTION_BUTTON = LEFT_BUTTON;
-    } else {
-        THROTTLE      = LEFTY;
-        AILERON       = RIGHTX;
-        ELEVATOR      = RIGHTY;
-        RUDDER        = LEFTX;
-        ARM_BUTTON    = LEFT_STICK_BUTTON;
-        FLIP_BUTTON   = RIGHT_STICK_BUTTON;
-        MODE_BUTTON   = RIGHT_BUTTON;
-        OPTION_BUTTON = LEFT_BUTTON;
-    }
+    // lvgl_init();
+    display.clear(BLACK);
+    display.setTextColor(WHITE);
+    display.setTextSize(1);
+    display.printf("Channel:%02d\n\r", Channel);
+    display.printf("MAC:%02X:%02X:%02X:%02X:%02X:%02X:\n\r", Addr2[0], Addr2[1], Addr2[2], Addr2[3], Addr2[4], Addr2[5]);
 
     byte error, address;
     int nDevices;
@@ -446,48 +426,12 @@ void setup() {
     esp_now_get_version(&espnow_version);
     USBSerial.printf("Version %d\n", espnow_version);
 
-    // 割り込み設定
+    // 割り込み設定 100Hz
     timer = timerBegin(1, 80, true);
     timerAttachInterrupt(timer, &onTimer, true);
     timerAlarmWrite(timer, 10000, true);
     timerAlarmEnable(timer);
     delay(100);
-}
-
-uint8_t check_control_mode_change(void) {
-    uint8_t state;
-    static uint8_t flag = 0;
-    state               = 0;
-    if (flag == 0) {
-        if (getOptionButton() == 1) {
-            flag = 1;
-        }
-    } else {
-        if (getOptionButton() == 0) {
-            flag  = 0;
-            state = 1;
-        }
-    }
-    // USBSerial.printf("%d %d\n\r", state, flag);
-    return state;
-}
-
-uint8_t check_alt_mode_change(void) {
-    uint8_t state;
-    static uint8_t flag = 0;
-    state               = 0;
-    if (flag == 0) {
-        if (getModeButton() == 1) {
-            flag = 1;
-        }
-    } else {
-        if (getModeButton() == 0) {
-            flag  = 0;
-            state = 1;
-        }
-    }
-    // USBSerial.printf("%d %d\n\r", state, flag);
-    return state;
 }
 
 void loop() {
@@ -501,40 +445,33 @@ void loop() {
     etime     = stime;
     stime     = micros();
     dtime     = stime - etime;
+
     M5.update();
     joy_update();
-
-    // Stop Watch Start&Stop&Reset
-    if (M5.Btn.wasPressed() == true) {
-        if (Timer_state == 0)
-            Timer_state = 1;
-        else if (Timer_state == 1)
-            Timer_state = 0;
-    }
-
-    if (M5.Btn.pressedFor(400) == true) {
-        Timer_state = 2;
-    }
-
-    if (Timer_state == 1) {
-        // カウントアップ
-        Timer = Timer + dTime;
-    } else if (Timer_state == 2) {
-        // タイマリセット
-        Timer       = 0.0;
-        Timer_state = 0;
-    }
 
     _throttle = getThrottle();
     _phi      = getAileron();
     _theta    = getElevator();
     _psi      = getRudder();
 
-    if (auto_up_down_status && (page_nums == PAGE_RUNNING)) {
-        // Throttle_bias = _throttle;
-        Phi_bias   = _phi;
-        Theta_bias = _theta;
-        Psi_bias   = _psi;
+    loop_func_cnt++;
+    if(loop_func_cnt > 20) {
+        loop_func_cnt = 0;
+        display.clear(BLACK);
+        display.setCursor(0, 0);
+        display.printf("    z: %04d    L1: %d\n", _throttle, getOptionButton() );
+        display.printf(" roll: %04d    R1: %d\n",  _phi, getModeButton());
+        display.printf("pitch: %04d    L3: %d\n", _theta, getFlipButton());
+        display.printf("  yaw: %04d    R3: %d\n", _psi, getArmButton());
+        display.printf("\n");
+        display.printf("bat1: %.3f V\n", Battery_voltage[0]);
+        display.printf("bat2: %.3f V\n", Battery_voltage[1]);
+        display.printf("robot: %.3f V\n", fly_bat_voltage);
+        display.printf("\n");
+        display.printf("pos:\n0 0 %.3f\n\n", altitude);
+        display.printf("rpy:\n%.3f %.3f %.3f\n", roll_angle, pitch_angle, yaw_angle);
+        display.printf("\n");
+        display.printf("mode: ");
     }
 
     // mass pro
@@ -589,69 +526,11 @@ void loop() {
 
     // 送信
     esp_err_t result = esp_now_send(peerInfo.peer_addr, senddata, sizeof(senddata));
-#ifdef DEBUG
-    USBSerial.printf("%02X:%02X:%02X:%02X:%02X:%02X\n", peerInfo.peer_addr[0], peerInfo.peer_addr[1],
-                     peerInfo.peer_addr[2], peerInfo.peer_addr[3], peerInfo.peer_addr[4], peerInfo.peer_addr[5]);
-#endif
-    // Display information
-    // float vbat =0.0;// M5.Axp.GetBatVoltage();
-    // int8_t bat_charge_p = int8_t((vbat - 3.0) / 1.2 * 100);
-
-    // Reset
-    if (/*M5.Axp.GetBtnPress() == 2*/ 0) {
-        // 電源ボタンクリック
-        // M5.Lcd.println("AtomFly2.0");
-        esp_restart();
-    }
-    if (auto_up_down_status) {
-        auto_up_down_status_counter++;
-        if (auto_up_down_status_counter > 20) {
-            auto_up_down_status_counter = 0;
-            auto_up_down_status         = 0;
-        }
-    }
-    if (proactive_flag) {
-        proactive_flag_counter++;
-        if (proactive_flag_counter > 20) {
-            proactive_flag_counter = 0;
-            proactive_flag         = 0;
-        }
-    }
-    if (is_fly_flag) {
-        is_fly_flag_counter++;
-        if (is_fly_flag_counter > 2000) {
-            is_fly_flag_counter = 0;
-            is_fly_flag         = 0;
-        }
-    }
-}
-
-void show_battery_info() {
-#if 0
-  // バッテリー電圧表示
-  double vbat = 0.0;
-  int8_t bat_charge_p = 0;
-
-  vbat = M5.Axp.GetBatVoltage();
-  M5.Lcd.setCursor(5, 100);
-  //M5.Lcd.setTextSize(1);
-  M5.Lcd.printf("Volt:\n %8.2fV", vbat);
-
-  // バッテリー残量表示
-  bat_charge_p = int8_t((vbat - 3.0) / 1.2 * 100);
-  M5.Lcd.setCursor(5, 140);
-  M5.Lcd.printf("Charge:\n %8d%%", bat_charge_p);
-#endif
-}
-
-void voltage_print(void) {
-    // M5.Lcd.setCursor(0, 17, 2);
-    // M5.Lcd.printf("%3.1fV", Battery_voltage);
 }
 
 void task_tone(void *pvParameters) {
     for (;;) {
-        // start_tone();
+        start_tone();
         vTaskDelete(task_tone_handle);
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
