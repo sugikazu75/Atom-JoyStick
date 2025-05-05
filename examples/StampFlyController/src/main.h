@@ -42,6 +42,8 @@ extern volatile float fly_bat_voltage;
 extern volatile float roll_angle;
 extern volatile float pitch_angle;
 extern volatile float yaw_angle;
+extern volatile float pos_x;
+extern volatile float pos_y;
 extern volatile float altitude;
 extern volatile uint8_t fly_status;
 extern volatile uint8_t fly_status_manual;

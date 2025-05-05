@@ -84,6 +84,8 @@ volatile float fly_bat_voltage = 0.0f;
 volatile float roll_angle      = 0.0f;
 volatile float pitch_angle     = 0.0f;
 volatile float yaw_angle       = 0.0f;
+volatile float pos_x           = 0.0f;
+volatile float pos_y           = 0.0f;
 volatile float altitude        = 0.0f;
 volatile int16_t tof_front     = 0.0;
 
@@ -133,16 +135,15 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *recv_data, int data_len)
             memcpy((uint8_t *)&pitch_angle, &recv_data[2 + 4 * (4 - 1)], 4);
             memcpy((uint8_t *)&yaw_angle, &recv_data[2 + 4 * (5 - 1)], 4);
             memcpy((uint8_t *)&fly_bat_voltage, &recv_data[2 + 4 * (15 - 1)], 4);
+            memcpy((uint8_t *)&pos_x, &recv_data[2 + 4 * (21 - 1)], 4);
+            memcpy((uint8_t *)&pos_y, &recv_data[2 + 4 * (22 - 1)], 4);
             memcpy((uint8_t *)&altitude, &recv_data[2 + 4 * (25 - 1)], 4);
             alt_flag = recv_data[2 + 4 * (28 - 1)];
             fly_mode = recv_data[2 + 4 * (28 - 1) + 1];
             memcpy((uint8_t *)&tof_front, &recv_data[2 + 4 * (28 - 1) + 2], 2);
             is_fly_flag = 1;
-            if (fly_mode == PARKING_MODE) {
-                fly_status_manual = 0;
             }
         }
-    }
 
     receive_func_cnt++;
     if (receive_func_cnt > 10) {
@@ -454,24 +455,17 @@ void loop() {
     _theta    = getElevator();
     _psi      = getRudder();
 
-    loop_func_cnt++;
-    if(loop_func_cnt > 20) {
-        loop_func_cnt = 0;
+    loop_func_cnt = (loop_func_cnt + 1) % 20;
+    if(loop_func_cnt == 0) {
         display.clear(BLACK);
         display.setCursor(0, 0);
-        display.printf("    z: %04d    L1: %d\n", _throttle, getOptionButton() );
-        display.printf(" roll: %04d    R1: %d\n",  _phi, getModeButton());
-        display.printf("pitch: %04d    L3: %d\n", _theta, getFlipButton());
-        display.printf("  yaw: %04d    R3: %d\n", _psi, getArmButton());
-        display.printf("\n");
-        display.printf("bat1: %.3f V\n", Battery_voltage[0]);
-        display.printf("bat2: %.3f V\n", Battery_voltage[1]);
-        display.printf("robot: %.3f V\n", fly_bat_voltage);
-        display.printf("\n");
-        display.printf("pos:\n0 0 %.3f\n\n", altitude);
+        display.printf("L1:%d R1:%d L3:%d R3:%d\n", getOptionButton(), getModeButton(), getFlipButton(), getArmButton());
+        display.printf("option: %d\n", M5.Btn.isPressed());
+        display.printf("bat: %.2f %.2f %.2f\n\n", Battery_voltage[0], Battery_voltage[1], fly_bat_voltage);
+        display.printf("pos:\n%.3f %.3f %.3f\n\n", pos_x, pos_y, altitude);
         display.printf("rpy:\n%.3f %.3f %.3f\n", roll_angle, pitch_angle, yaw_angle);
         display.printf("\n");
-        display.printf("mode: ");
+        display.printf("mode: %d", fly_mode);
     }
 
     // mass pro
@@ -518,7 +512,7 @@ void loop() {
     senddata[21] = getOptionButton();
     senddata[22] = getModeButton();
 
-    senddata[23] = proactive_flag;
+    senddata[23] = M5.Btn.isPressed();
 
     // checksum
     senddata[24] = 0;
