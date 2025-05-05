@@ -65,7 +65,7 @@ uint8_t Timer_state        = 0;
 uint32_t espnow_version;
 
 uint8_t receive_func_cnt = 0;
-uint8_t loop_func_cnt = 0;
+uint8_t loop_func_cnt    = 0;
 
 unsigned long stime, etime, dtime;
 byte axp_cnt = 0;
@@ -142,8 +142,8 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *recv_data, int data_len)
             fly_mode = recv_data[2 + 4 * (28 - 1) + 1];
             memcpy((uint8_t *)&tof_front, &recv_data[2 + 4 * (28 - 1) + 2], 2);
             is_fly_flag = 1;
-            }
         }
+    }
 
     receive_func_cnt++;
     if (receive_func_cnt > 10) {
@@ -393,7 +393,8 @@ void setup() {
     display.setTextColor(WHITE);
     display.setTextSize(1);
     display.printf("Channel:%02d\n\r", Channel);
-    display.printf("MAC:%02X:%02X:%02X:%02X:%02X:%02X:\n\r", Addr2[0], Addr2[1], Addr2[2], Addr2[3], Addr2[4], Addr2[5]);
+    display.printf("MAC:%02X:%02X:%02X:%02X:%02X:%02X:\n\r", Addr2[0], Addr2[1], Addr2[2], Addr2[3], Addr2[4],
+                   Addr2[5]);
 
     byte error, address;
     int nDevices;
@@ -441,7 +442,8 @@ void loop() {
     uint16_t _theta;     // = getElevator();
     uint16_t _psi;       // = getRudder();
 
-    while (Loop_flag == 0);
+    while (Loop_flag == 0)
+        ;
     Loop_flag = 0;
     etime     = stime;
     stime     = micros();
@@ -456,10 +458,11 @@ void loop() {
     _psi      = getRudder();
 
     loop_func_cnt = (loop_func_cnt + 1) % 20;
-    if(loop_func_cnt == 0) {
+    if (loop_func_cnt == 0) {
         display.clear(BLACK);
         display.setCursor(0, 0);
-        display.printf("L1:%d R1:%d L3:%d R3:%d\n", getOptionButton(), getModeButton(), getFlipButton(), getArmButton());
+        display.printf("L1:%d R1:%d L3:%d R3:%d\n", getOptionButton(), getModeButton(), getFlipButton(),
+                       getArmButton());
         display.printf("option: %d\n", M5.Btn.isPressed());
         display.printf("bat: %.2f %.2f %.2f\n\n", Battery_voltage[0], Battery_voltage[1], fly_bat_voltage);
         display.printf("pos:\n%.3f %.3f %.3f\n\n", pos_x, pos_y, altitude);
