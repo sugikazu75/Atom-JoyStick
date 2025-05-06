@@ -80,14 +80,15 @@ volatile uint8_t fly_status_manual            = 0;
 volatile uint8_t auto_up_down_status          = 0;
 volatile uint32_t auto_up_down_status_counter = 0;
 
-volatile float fly_bat_voltage = 0.0f;
-volatile float roll_angle      = 0.0f;
-volatile float pitch_angle     = 0.0f;
-volatile float yaw_angle       = 0.0f;
-volatile float pos_x           = 0.0f;
-volatile float pos_y           = 0.0f;
-volatile float altitude        = 0.0f;
-volatile int16_t tof_front     = 0.0;
+volatile float average_loop_time = 0.0f;
+volatile float fly_bat_voltage   = 0.0f;
+volatile float roll_angle        = 0.0f;
+volatile float pitch_angle       = 0.0f;
+volatile float yaw_angle         = 0.0f;
+volatile float pos_x             = 0.0f;
+volatile float pos_y             = 0.0f;
+volatile float altitude          = 0.0f;
+volatile int16_t tof_front       = 0.0;
 
 volatile uint8_t alt_flag      = 0;
 volatile uint8_t fly_mode      = 0;
@@ -134,6 +135,7 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *recv_data, int data_len)
             memcpy((uint8_t *)&roll_angle, &recv_data[2 + 4 * (3 - 1)], 4);
             memcpy((uint8_t *)&pitch_angle, &recv_data[2 + 4 * (4 - 1)], 4);
             memcpy((uint8_t *)&yaw_angle, &recv_data[2 + 4 * (5 - 1)], 4);
+            memcpy((uint8_t *)&average_loop_time, &recv_data[2 + 4 * (6 - 1)], 4);
             memcpy((uint8_t *)&fly_bat_voltage, &recv_data[2 + 4 * (15 - 1)], 4);
             memcpy((uint8_t *)&pos_x, &recv_data[2 + 4 * (21 - 1)], 4);
             memcpy((uint8_t *)&pos_y, &recv_data[2 + 4 * (22 - 1)], 4);
@@ -468,6 +470,7 @@ void loop() {
         display.printf("pos:\n%.3f %.3f %.3f\n\n", pos_x, pos_y, altitude);
         display.printf("rpy:\n%.3f %.3f %.3f\n", roll_angle, pitch_angle, yaw_angle);
         display.printf("\n");
+        display.printf("loop time: %.3fms\n", average_loop_time);
         display.printf("mode: %d", fly_mode);
     }
 

@@ -38,6 +38,7 @@ extern uint8_t StickMode;
 extern uint8_t AltMode;
 extern uint8_t Mode;
 extern esp_now_peer_info_t peerInfo;
+extern volatile float average_loop_time;
 extern volatile float fly_bat_voltage;
 extern volatile float roll_angle;
 extern volatile float pitch_angle;
